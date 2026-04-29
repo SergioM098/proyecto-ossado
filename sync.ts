@@ -22,6 +22,7 @@ export const BILLING_STRUCTURE_TABLES = [
   "estructura_json_ne_employer",
   "estructura_json_ne_notes",
   "estructura_json_ne_numero",
+  "errores_fe_dian"
 ];
 
 export const BILLING_STRUCTURE_PROCEDURES = ["sp_genera_estructura"];
