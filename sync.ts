@@ -25,7 +25,16 @@ export const BILLING_STRUCTURE_TABLES = [
   "errores_fe_dian"
 ];
 
-export const BILLING_STRUCTURE_PROCEDURES = ["sp_genera_estructura"];
+export const BILLING_STRUCTURE_PROCEDURES = [
+  "sp_actualiza_fecfac",
+  "sp_factura_con_referencia",
+  "sp_factura_con_referencia_post",
+  "sp_factura_ds",
+  "sp_factura_sin_referencia",
+  "sp_genera_estructura",
+  "sp_nomina_ne",
+  "sp_nomina_ne_cabeza",
+];
 
 export interface SyncResult {
   tablesCreated: string[];
