@@ -48,7 +48,7 @@ async function getTableRows(
   return rows as Record<string, unknown>[];
 }
 
-async function replaceTableData(
+export async function replaceTableData(
   db1Conn: Connection,
   db2Conn: Connection,
   tableName: string
