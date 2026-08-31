@@ -7,7 +7,12 @@ import {
   BILLING_STRUCTURE_TABLES,
   BILLING_STRUCTURE_PROCEDURES,
 } from "./sync.js";
-import { syncData, DATA_SYNC_TABLES, replaceTableData } from "./dataSync.js";
+import {
+  syncData,
+  DATA_SYNC_TABLES,
+  SCHEMA_SYNC_DATA_TABLES,
+  replaceTableData,
+} from "./dataSync.js";
 
 type DbConnection = Awaited<ReturnType<typeof createConnection>>;
 
@@ -66,6 +71,21 @@ async function runSchemaSync(db1Conn: DbConnection, db2Conn: DbConnection) {
     );
   } else {
     console.log("  Errores:            0");
+  }
+
+  console.log("\n=== Reemplazando data de tablas de esquemas ===");
+  console.log(`  Tablas: ${SCHEMA_SYNC_DATA_TABLES.join(", ")}\n`);
+
+  for (const table of SCHEMA_SYNC_DATA_TABLES) {
+    try {
+      process.stdout.write(`  [DATA] Reemplazando data de: ${table}...`);
+      const rowCount = await replaceTableData(db1Conn, db2Conn, table);
+      console.log(` OK (${rowCount} filas)`);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.log(` ERROR`);
+      console.log(`    -> ${errorMsg}`);
+    }
   }
 }
 

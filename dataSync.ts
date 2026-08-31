@@ -34,6 +34,14 @@ export const DATA_SYNC_TABLES = [
   "formas",
 ];
 
+// Tablas cuya data se reemplaza como parte de la sincronizacion de esquemas (opcion 1)
+export const SCHEMA_SYNC_DATA_TABLES = [
+  "concepto_recaudo",
+  "ips_cobertura",
+  "ips_modalidad_pago",
+  "tipo_operacion",
+];
+
 export interface DataSyncResult {
   tablesReplaced: string[];
   rowsCopied: { table: string; rows: number }[];

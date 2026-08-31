@@ -8,11 +8,11 @@ export interface DbConfig {
 
 // Base de datos 1 (TARGET - donde se copiarán tablas/columnas faltantes)
 export const db1Config: DbConfig = {
-  host: "66.94.100.31",
+  host: "localhost",
   port: 3306,
-  user: "ossadosystem",
-  password: "ossadoprogram",
-  database: "ossado",
+  user: "root",
+  password: "ossadow7sql",
+  database: "ossado1",
 };
 
 // Base de datos 2 (SOURCE - de donde se leen las tablas/columnas)
