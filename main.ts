@@ -4,8 +4,10 @@ import { createConnection, closeConnection } from "./db.js";
 import {
   syncSchemas,
   syncBillingStructure,
+  createMissingProcedures,
   BILLING_STRUCTURE_TABLES,
   BILLING_STRUCTURE_PROCEDURES,
+  GENERAL_PROCEDURES,
 } from "./sync.js";
 import {
   syncData,
@@ -32,7 +34,8 @@ function showMenu() {
   console.log("  2) Reemplazar data de tablas de opciones y formas");
   console.log("  3) Ambos (sincronizar esquemas + reemplazar data)");
   console.log("  4) Agregar estructura de facturacion solamente");
-  console.log("  5) Salir");
+  console.log("  5) Copiar procedimientos generales");
+  console.log("  6) Salir");
   console.log();
 }
 
@@ -167,18 +170,44 @@ async function runBillingStructureSync(db1Conn: DbConnection, db2Conn: DbConnect
   }
 }
 
+async function runProceduresSync(db1Conn: DbConnection, db2Conn: DbConnection) {
+  console.log("\n=== COPIA DE PROCEDIMIENTOS ===");
+  console.log(`  Procedimientos solicitados: ${GENERAL_PROCEDURES.length}`);
+  console.log(`  (${GENERAL_PROCEDURES.join(", ")})\n`);
+
+  const result = await createMissingProcedures(db1Conn, db2Conn, GENERAL_PROCEDURES);
+
+  console.log("\n--- Resumen Procedimientos ---");
+  console.log(`  Procedimientos creados:  ${result.proceduresCreated.length}`);
+  if (result.proceduresCreated.length > 0) {
+    result.proceduresCreated.forEach((p) => console.log(`    - ${p}`));
+  }
+  console.log(`  Procedimientos omitidos: ${result.proceduresSkipped.length}`);
+  if (result.proceduresSkipped.length > 0) {
+    result.proceduresSkipped.forEach((p) => console.log(`    - ${p}`));
+  }
+  if (result.errors.length > 0) {
+    console.log(`  Errores:                 ${result.errors.length}`);
+    result.errors.forEach((e) =>
+      console.log(`    - ${e.action}: ${e.error}`)
+    );
+  } else {
+    console.log("  Errores:                 0");
+  }
+}
+
 async function main() {
   showBanner();
   showMenu();
 
-  const option = await askQuestion("  Seleccione una opcion (1-5): ");
+  const option = await askQuestion("  Seleccione una opcion (1-6): ");
 
-  if (option === "5") {
+  if (option === "6") {
     console.log("\n  Hasta luego.");
     return;
   }
 
-  if (!["1", "2", "3", "4"].includes(option)) {
+  if (!["1", "2", "3", "4", "5"].includes(option)) {
     console.log("\n  Opcion no valida.");
     return;
   }
@@ -204,6 +233,10 @@ async function main() {
 
     if (option === "4") {
       await runBillingStructureSync(db1Conn, db2Conn);
+    }
+
+    if (option === "5") {
+      await runProceduresSync(db1Conn, db2Conn);
     }
 
     console.log("\n  Proceso completado.");

@@ -34,6 +34,19 @@ export const BILLING_STRUCTURE_PROCEDURES = [
   "sp_genera_estructura",
   "sp_nomina_ne",
   "sp_nomina_ne_cabeza",
+  "sp_periodos_moconta"
+];
+
+export const GENERAL_PROCEDURES = [
+  "terceros",
+  "fuentes",
+  "sucursal",
+  "tipo_documento",
+  "consecutivos",
+  "sp_ccosto",
+  "macuenta",
+  "get_current_consecutives",
+  "moconta",
 ];
 
 export interface SyncResult {

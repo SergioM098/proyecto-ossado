@@ -91,7 +91,14 @@ export async function getCreateProcedureDDL(
   const [rows] = await conn.query<mysql.RowDataPacket[]>(
     `SHOW CREATE PROCEDURE \`${escapedProcedureName}\``
   );
-  const result = rows as Array<{ "Create Procedure": string }>;
+  const result = rows as Array<{ "Create Procedure": string | null }>;
+
+  // MySQL returns NULL when the connected user is not the definer and cannot read mysql.proc.
+  if (!result[0]?.["Create Procedure"]) {
+    throw new Error(
+      "El usuario de DB2 no tiene permiso para leer el cuerpo del procedimiento (no es el DEFINER y no tiene SELECT sobre mysql.proc)"
+    );
+  }
 
   // Avoid requiring the original DEFINER user to exist in the target database.
   return result[0]["Create Procedure"].replace(
