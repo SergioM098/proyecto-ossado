@@ -32,6 +32,9 @@ export const DATA_SYNC_TABLES = [
   "opciont",
   "opciontr",
   "formas",
+  "monedas",
+  "ciudades",
+  "paises_fe",
 ];
 
 // Tablas cuya data se reemplaza como parte de la sincronizacion de esquemas (opcion 1)
@@ -40,6 +43,7 @@ export const SCHEMA_SYNC_DATA_TABLES = [
   "ips_cobertura",
   "ips_modalidad_pago",
   "tipo_operacion",
+  "paises_fe",
 ];
 
 export interface DataSyncResult {
