@@ -1,4 +1,4 @@
-import type { Connection } from "./db.js";
+import type { Connection } from "./db";
 
 // Tablas cuya data se reemplazará desde DB2 → DB1
 export const DATA_SYNC_TABLES = [
@@ -46,12 +46,6 @@ export const SCHEMA_SYNC_DATA_TABLES = [
   "paises_fe",
 ];
 
-export interface DataSyncResult {
-  tablesReplaced: string[];
-  rowsCopied: { table: string; rows: number }[];
-  errors: { table: string; error: string }[];
-}
-
 async function getTableRows(
   conn: Connection,
   tableName: string
@@ -96,40 +90,4 @@ export async function replaceTableData(
   }
 
   return rows.length;
-}
-
-export async function syncData(
-  db1Conn: Connection,
-  db2Conn: Connection
-): Promise<DataSyncResult> {
-  const result: DataSyncResult = {
-    tablesReplaced: [],
-    rowsCopied: [],
-    errors: [],
-  };
-
-  // Desactivar checks de FK para evitar problemas de orden
-  await db1Conn.query("SET FOREIGN_KEY_CHECKS = 0");
-
-  try {
-    for (const table of DATA_SYNC_TABLES) {
-      try {
-        process.stdout.write(`  [DATA] Reemplazando data de: ${table}...`);
-        const rowCount = await replaceTableData(db1Conn, db2Conn, table);
-        result.tablesReplaced.push(table);
-        result.rowsCopied.push({ table, rows: rowCount });
-        console.log(` OK (${rowCount} filas)`);
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        console.log(` ERROR`);
-        console.log(`    -> ${errorMsg}`);
-        result.errors.push({ table, error: errorMsg });
-      }
-    }
-  } finally {
-    // Reactivar checks de FK
-    await db1Conn.query("SET FOREIGN_KEY_CHECKS = 1");
-  }
-
-  return result;
 }

@@ -1,12 +1,12 @@
-import type { Connection } from "./db.js";
+import type { Connection } from "./db";
 import {
   getTables,
   getColumns,
   getCreateTableDDL,
   getProcedures,
   getCreateProcedureDDL,
-} from "./schema.js";
-import type { ColumnInfo } from "./schema.js";
+} from "./schema";
+import type { ColumnInfo } from "./schema";
 
 export const BILLING_STRUCTURE_TABLES = [
   "estructura_json_fe_cab",
@@ -188,51 +188,51 @@ export async function addMissingColumns(
   return result;
 }
 
-export async function syncSchemas(
-  db1Conn: Connection,
-  db2Conn: Connection
-): Promise<SyncResult> {
-  const finalResult: SyncResult = {
-    tablesCreated: [],
-    columnsAdded: [],
-    errors: [],
-  };
-
-  console.log("=== Obteniendo tablas de ambas bases de datos ===");
+export async function planSchemaSync(db1Conn: Connection, db2Conn: Connection) {
   const db1Tables = await getTables(db1Conn);
   const db2Tables = await getTables(db2Conn);
-
-  console.log(`  DB1 (target): ${db1Tables.length} tablas`);
-  console.log(`  DB2 (source): ${db2Tables.length} tablas`);
-
-  // 1. Crear tablas faltantes
-  const missingTables = findMissingTables(db1Tables, db2Tables);
-  console.log(`\n=== Tablas faltantes en DB1: ${missingTables.length} ===`);
-
-  if (missingTables.length > 0) {
-    const createResult = await createMissingTables(
-      db1Conn,
-      db2Conn,
-      missingTables
-    );
-    finalResult.tablesCreated.push(...createResult.tablesCreated);
-    finalResult.errors.push(...createResult.errors);
-  }
-
-  // 2. Comparar columnas en tablas existentes en ambas DBs
   const db1Set = new Set(db1Tables.map((t) => t.toLowerCase()));
-  const commonTables = db2Tables.filter((t) => db1Set.has(t.toLowerCase()));
-  console.log(
-    `\n=== Comparando columnas en ${commonTables.length} tablas comunes ===`
-  );
 
-  for (const table of commonTables) {
-    const colResult = await addMissingColumns(db1Conn, db2Conn, table);
-    finalResult.columnsAdded.push(...colResult.columnsAdded);
-    finalResult.errors.push(...colResult.errors);
+  return {
+    db1Count: db1Tables.length,
+    db2Count: db2Tables.length,
+    missingTables: findMissingTables(db1Tables, db2Tables),
+    commonTables: db2Tables.filter((t) => db1Set.has(t.toLowerCase())),
+  };
+}
+
+export async function planBillingStructure(db1Conn: Connection, db2Conn: Connection) {
+  const db1Tables = await getTables(db1Conn);
+  const db2Tables = await getTables(db2Conn);
+  const db1TablesByLower = mapNamesByLowerCase(db1Tables);
+  const db2TablesByLower = mapNamesByLowerCase(db2Tables);
+
+  const missingTables: string[] = [];
+  const commonTables: string[] = [];
+  const errors: { action: string; error: string }[] = [];
+
+  for (const table of BILLING_STRUCTURE_TABLES) {
+    const sourceTable = db2TablesByLower.get(table.toLowerCase());
+
+    if (!sourceTable) {
+      errors.push({ action: `CREATE TABLE ${table}`, error: "No existe en DB2 (source)" });
+      continue;
+    }
+
+    if (db1TablesByLower.has(table.toLowerCase())) {
+      commonTables.push(sourceTable);
+    } else {
+      missingTables.push(sourceTable);
+    }
   }
 
-  return finalResult;
+  return {
+    db1Count: db1Tables.length,
+    db2Count: db2Tables.length,
+    missingTables,
+    commonTables,
+    errors,
+  };
 }
 
 export async function createMissingProcedures(
@@ -287,80 +287,4 @@ export async function createMissingProcedures(
   }
 
   return result;
-}
-
-export async function syncBillingStructure(
-  db1Conn: Connection,
-  db2Conn: Connection
-): Promise<BillingStructureSyncResult> {
-  const finalResult: BillingStructureSyncResult = {
-    tablesCreated: [],
-    columnsAdded: [],
-    proceduresCreated: [],
-    proceduresSkipped: [],
-    errors: [],
-  };
-
-  console.log("=== Obteniendo tablas de ambas bases de datos ===");
-  const db1Tables = await getTables(db1Conn);
-  const db2Tables = await getTables(db2Conn);
-  const db1TablesByLower = mapNamesByLowerCase(db1Tables);
-  const db2TablesByLower = mapNamesByLowerCase(db2Tables);
-
-  console.log(`  DB1 (target): ${db1Tables.length} tablas`);
-  console.log(`  DB2 (source): ${db2Tables.length} tablas`);
-  console.log(`  Tablas de facturacion solicitadas: ${BILLING_STRUCTURE_TABLES.length}`);
-
-  const missingTables: string[] = [];
-  const commonTables: string[] = [];
-
-  for (const table of BILLING_STRUCTURE_TABLES) {
-    const sourceTable = db2TablesByLower.get(table.toLowerCase());
-
-    if (!sourceTable) {
-      const error = "No existe en DB2 (source)";
-      console.log(`  [ERROR] Tabla '${table}': ${error}`);
-      finalResult.errors.push({
-        action: `CREATE TABLE ${table}`,
-        error,
-      });
-      continue;
-    }
-
-    if (db1TablesByLower.has(table.toLowerCase())) {
-      commonTables.push(sourceTable);
-    } else {
-      missingTables.push(sourceTable);
-    }
-  }
-
-  console.log(`\n=== Tablas de facturacion faltantes en DB1: ${missingTables.length} ===`);
-  if (missingTables.length > 0) {
-    const createResult = await createMissingTables(db1Conn, db2Conn, missingTables);
-    finalResult.tablesCreated.push(...createResult.tablesCreated);
-    finalResult.errors.push(...createResult.errors);
-  }
-
-  console.log(
-    `\n=== Comparando columnas en ${commonTables.length} tablas de facturacion existentes ===`
-  );
-  for (const table of commonTables) {
-    const colResult = await addMissingColumns(db1Conn, db2Conn, table);
-    finalResult.columnsAdded.push(...colResult.columnsAdded);
-    finalResult.errors.push(...colResult.errors);
-  }
-
-  console.log(
-    `\n=== Agregando procedimientos de facturacion: ${BILLING_STRUCTURE_PROCEDURES.length} ===`
-  );
-  const procedureResult = await createMissingProcedures(
-    db1Conn,
-    db2Conn,
-    BILLING_STRUCTURE_PROCEDURES
-  );
-  finalResult.proceduresCreated.push(...procedureResult.proceduresCreated);
-  finalResult.proceduresSkipped.push(...procedureResult.proceduresSkipped);
-  finalResult.errors.push(...procedureResult.errors);
-
-  return finalResult;
 }

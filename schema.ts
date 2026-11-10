@@ -1,5 +1,5 @@
 import type mysql from "mysql2/promise";
-import type { Connection } from "./db.js";
+import type { Connection } from "./db";
 
 export interface ColumnInfo {
   name: string;

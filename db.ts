@@ -1,5 +1,12 @@
 import mysql from "mysql2/promise";
-import type { DbConfig } from "./config.js";
+
+export interface DbConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+}
 
 export type Connection = mysql.Connection;
 
@@ -10,6 +17,7 @@ export async function createConnection(config: DbConfig): Promise<Connection> {
     user: config.user,
     password: config.password,
     database: config.database,
+    connectTimeout: 20000,
   });
   return connection;
 }
