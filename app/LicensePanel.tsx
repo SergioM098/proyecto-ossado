@@ -126,7 +126,7 @@ export function LicensePanel({ active }: { active: boolean }) {
         id: String(index),
         label: `${l.nit} - ${l.nombre ?? "(sin nombre)"}`,
         detail: `Vence ${formatDate(l.hasta)}`,
-        group: "dbcontrol",
+        group: "Licencias",
         search: toSearchText(l.nit, l.nombre),
       })),
     [licenses]
@@ -287,19 +287,19 @@ export function LicensePanel({ active }: { active: boolean }) {
         {license && sameRowCount > 1 && (
           <div className="notice error">
             <Icon name="alert" size={15} />
-            Hay {sameRowCount} filas en dbcontrol con este mismo NIT y nombre. No se puede activar hasta corregir los
+            Hay {sameRowCount} licencias con este mismo NIT y nombre. No se puede activar hasta corregir los
             datos repetidos.
           </div>
         )}
         {license && sameRowCount === 1 && sameNitCount > 1 && (
           <div className="notice warn">
             <Icon name="alert" size={15} />
-            El NIT {license.nit} aparece {sameNitCount} veces en dbcontrol con nombres distintos; solo se actualiza esta
+            El NIT {license.nit} aparece {sameNitCount} veces en las licencias con nombres distintos; solo se actualiza esta
             fila. Revisa que la base encontrada abajo sea la de esta empresa.
           </div>
         )}
         {!license && !loading && licenses.length > 0 && (
-          <p className="hint">{licenses.length} licencias en dbcontrol.</p>
+          <p className="hint">{licenses.length} licencias registradas.</p>
         )}
       </section>
 
@@ -379,7 +379,7 @@ export function LicensePanel({ active }: { active: boolean }) {
             <div className="empty">
               <Icon name="building" size={22} />
               <div>No se encontró ninguna base con el NIT {license.nit}.</div>
-              <div className="hint">Si activas, solo se actualiza dbcontrol.licencia.</div>
+              <div className="hint">Si activas, solo se actualiza la fecha de la licencia.</div>
             </div>
           )}
           {preview && preview.length > 1 && (
@@ -425,7 +425,7 @@ export function LicensePanel({ active }: { active: boolean }) {
                       <tbody>
                         {company.changes.map((c) => (
                           <tr key={c.column}>
-                            <td className="mono">{c.label}</td>
+                            <td>{c.label}</td>
                             {c.error ? (
                               <td colSpan={3} className="error-text">
                                 {c.error}
@@ -502,7 +502,7 @@ export function LicensePanel({ active }: { active: boolean }) {
                 <li key={i}>
                   <span className={`pill ${s.ok ? "ok" : "bad"}`}>{s.ok ? "OK" : "Error"}</span>
                   <span>
-                    <span className="mono">{s.where}</span>: {s.detail}
+                    <b>{s.where}</b>: {s.detail}
                   </span>
                 </li>
               ))}
@@ -527,16 +527,8 @@ export function LicensePanel({ active }: { active: boolean }) {
             <p className="modal-section-title">Qué va a hacer</p>
             <ul className="modal-steps">
               <li>
-                <span className="mono">dbcontrol.licencia.hasta</span> = {formatDate(hasta)},{" "}
-                <span className="mono">dias</span> = {daysBetween(today, hasta)}
+                Extender la licencia hasta <b>{formatDate(hasta)}</b> ({daysBetween(today, hasta)} días)
               </li>
-              {chosen.map((c) => (
-                <li key={c.connection.id}>
-                  Base <b>{c.connection.database}</b> ({c.connection.serverLabel}):{" "}
-                  <span className="mono">licencia.expira</span> = {formatDate(hasta)},{" "}
-                  <span className="mono">pasabordo</span> = *, <span className="mono">tasafija</span> = .
-                </li>
-              ))}
             </ul>
             <div className="modal-actions">
               <button onClick={() => setConfirming(false)} autoFocus>

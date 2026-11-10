@@ -80,9 +80,9 @@ export async function listLicenses(): Promise<LicenseRow[]> {
 
 // Lo que se cambia en la base de cada empresa. "empresa" puede llamarse "empresas".
 const COMPANY_CHANGES = [
-  { tables: ["licencia"], column: "expira", value: (hasta: string) => hasta },
-  { tables: ["empresa", "empresas"], column: "pasabordo", value: () => "*" },
-  { tables: ["parafact"], column: "tasafija", value: () => "." },
+  { tables: ["licencia"], column: "expira", name: "Vencimiento", value: (hasta: string) => hasta },
+  { tables: ["empresa", "empresas"], column: "pasabordo", name: "Acceso", value: () => "*" },
+  { tables: ["parafact"], column: "tasafija", name: "Facturación", value: () => "." },
 ] as const;
 
 interface ResolvedChange {
@@ -108,12 +108,12 @@ async function resolveChange(
     const column = columns.map((c) => String(c.Field)).find((f) => f.toLowerCase() === change.column);
     if (column) return { table, column };
   }
-  throw new Error(`no tiene ${change.tables.join(" / ")}.${change.column}`);
+  throw new Error(`no tiene ${change.tables.join(" / ")}.${change.column}`); // solo para el log del servidor
 }
 
 export interface CompanyChangePreview {
   column: "expira" | "pasabordo" | "tasafija";
-  label: string; // tabla.columna como se llama en esa base
+  label: string; // nombre amigable, sin revelar tablas ni columnas
   current: (string | null)[]; // valores actuales (primeras filas)
   rows: number;
   error?: string;
@@ -139,7 +139,7 @@ export async function previewCompany(connection: PublicConnection): Promise<Comp
   return withConnection(config, async (conn) => {
     const changes: CompanyChangePreview[] = [];
     for (const change of COMPANY_CHANGES) {
-      const label = `${change.tables[0]}.${change.column}`;
+      const label = change.name;
       try {
         const { table, column } = await resolveChange(conn, connection.database, change);
         const [rows] = await conn.query<mysql.RowDataPacket[]>(
@@ -150,18 +150,13 @@ export async function previewCompany(connection: PublicConnection): Promise<Comp
         );
         changes.push({
           column: change.column,
-          label: `${table}.${column}`,
+          label,
           current: rows.map((r) => (r.v == null ? null : String(r.v))),
           rows: Number(count[0].n),
         });
       } catch (err) {
-        changes.push({
-          column: change.column,
-          label,
-          current: [],
-          rows: 0,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        console.error(`[licencias] ${connection.id} ${change.column}:`, err);
+        changes.push({ column: change.column, label, current: [], rows: 0, error: "No se pudo leer este dato" });
       }
     }
     return { connection, changes };
@@ -197,8 +192,8 @@ export async function activateLicense(
   if (matching !== 1) {
     throw new Error(
       matching === 0
-        ? "No se encontro la licencia en dbcontrol (puede haber cambiado). Recarga la lista."
-        : `Hay ${matching} filas en dbcontrol.licencia con el mismo NIT y nombre; no se actualizo nada. Corrige los datos repetidos primero.`
+        ? "No se encontro la licencia (puede haber cambiado). Recarga la lista."
+        : `Hay ${matching} licencias con el mismo NIT y nombre; no se actualizo nada. Corrige los datos repetidos primero.`
     );
   }
 
@@ -225,8 +220,8 @@ export async function activateLicense(
     );
     const dias = check[0]?.dias;
     steps.push({
-      where: "dbcontrol.licencia",
-      detail: `hasta = ${hasta}, dias = ${dias ?? "?"} (${result.affectedRows} fila${result.affectedRows === 1 ? "" : "s"})`,
+      where: "Licencia",
+      detail: `vence el ${hasta}${dias != null ? ` (${dias} días)` : ""}`,
       ok: result.affectedRows > 0,
     });
   });
@@ -239,28 +234,19 @@ export async function activateLicense(
           const value = change.value(hasta);
           try {
             const { table, column } = await resolveChange(conn, target.database, change);
-            const [result] = await conn.query<mysql.ResultSetHeader>(
-              `UPDATE ${q(target.database)}.${q(table)} SET ${q(column)} = ?`,
-              [value]
-            );
-            steps.push({
-              where: `${target.database}.${table}`,
-              detail: `${column} = ${value} (${result.affectedRows} fila${result.affectedRows === 1 ? "" : "s"})`,
-              ok: true,
-            });
+            await conn.query(`UPDATE ${q(target.database)}.${q(table)} SET ${q(column)} = ?`, [value]);
+            steps.push({ where: `${target.serverLabel} · ${change.name}`, detail: "actualizado", ok: true });
           } catch (err) {
-            steps.push({
-              where: `${target.database}.${change.tables[0]}`,
-              detail: err instanceof Error ? err.message : String(err),
-              ok: false,
-            });
+            console.error(`[licencias] ${target.id} ${change.column}:`, err);
+            steps.push({ where: `${target.serverLabel} · ${change.name}`, detail: "no se pudo actualizar", ok: false });
           }
         }
       });
     } catch (err) {
+      console.error(`[licencias] ${target.id} conexion:`, err);
       steps.push({
-        where: target.database,
-        detail: `No se pudo conectar: ${err instanceof Error ? err.message : String(err)}`,
+        where: target.serverLabel,
+        detail: "no se pudo conectar",
         ok: false,
       });
     }
