@@ -84,8 +84,8 @@ const OPTIONS: {
   },
   {
     id: "2",
-    title: "Reemplazar data de opciones y formas",
-    description: "Borra y copia la data de las tablas opcion*, formas, monedas, ciudades y paises_fe.",
+    title: "Reemplazar data de configuración",
+    description: "Borra y copia la data de las tablas de configuración.",
     destructive: true,
     icon: "copy",
   },
@@ -99,7 +99,7 @@ const OPTIONS: {
   {
     id: "4",
     title: "Estructura de facturación",
-    description: "Tablas y procedimientos de facturación, y reemplaza la data de opcion04.",
+    description: "Tablas y procedimientos de facturación, y reemplaza su configuración.",
     destructive: true,
     icon: "receipt",
   },
@@ -135,10 +135,10 @@ function describeSteps(option: OptionId, lists: Lists): string[] {
   const schema = [
     "Crea las tablas que existan en origen y falten en destino",
     "Agrega las columnas que falten en las tablas que ya existen",
-    `Borra y reemplaza la data de: ${lists.schemaSyncDataTables.join(", ")}`,
+    `Borra y reemplaza la data de ${lists.schemaSyncDataTables.length} tablas de configuración`,
   ];
   const data = [
-    `Borra y reemplaza la data de ${lists.dataSyncTables.length} tablas: ${lists.dataSyncTables.join(", ")}`,
+    `Borra y reemplaza la data de ${lists.dataSyncTables.length} tablas de configuración`,
   ];
   switch (option) {
     case "1":
@@ -149,13 +149,13 @@ function describeSteps(option: OptionId, lists: Lists): string[] {
       return [...schema, ...data];
     case "4":
       return [
-        "Crea o completa las tablas de facturacion (estructura_json_*, errores_fe_dian)",
-        `Crea los procedimientos que falten: ${lists.billingProcedures.join(", ")}`,
-        "Borra y reemplaza la data de opcion04",
+        "Crea o completa las tablas de facturación electrónica",
+        `Crea los procedimientos de facturación que falten (${lists.billingProcedures.length})`,
+        "Borra y reemplaza la data de configuración de facturación",
       ];
     case "5":
       return [
-        `Crea los procedimientos que falten: ${lists.generalProcedures.join(", ")}`,
+        `Crea los procedimientos generales que falten (${lists.generalProcedures.length})`,
         "Los que ya existen en destino no se tocan",
       ];
   }
