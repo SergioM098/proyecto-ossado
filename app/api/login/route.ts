@@ -3,11 +3,15 @@ import { SESSION_COOKIE, checkPassword, createSessionValue } from "../../../lib/
 
 export const runtime = "nodejs";
 
-// Bloqueo por IP tras varios intentos fallidos. Vive en memoria de cada instancia,
-// asi que es un freno extra; la defensa principal es una contraseña larga y aleatoria.
-const MAX_FAILS = 5;
-const LOCK_MS = 15 * 60 * 1000;
-const fails = new Map<string, { count: number; until: number }>();
+// Retardo progresivo por IP: cada fallo tarda mas en responder, asi probar
+// claves se vuelve cada vez mas lento. El conteo vive en la memoria de cada
+// instancia de Vercel, asi que es "lo mejor posible" (escala cuando los intentos
+// caen en la misma instancia; en el peor caso se queda en BASE_MS). La defensa
+// principal sigue siendo una contraseña larga y aleatoria.
+const BASE_MS = 1000;
+const MAX_MS = 10000;
+const WINDOW_MS = 15 * 60 * 1000;
+const fails = new Map<string, { count: number; seen: number }>();
 
 function clientIp(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
@@ -17,22 +21,17 @@ export async function POST(request: Request) {
   const ip = clientIp(request);
   const now = Date.now();
   const entry = fails.get(ip);
-  if (entry && entry.until > now) {
-    return NextResponse.json(
-      { error: "Demasiados intentos. Espera 15 minutos." },
-      { status: 429 }
-    );
-  }
 
   const body = await request.json().catch(() => null);
   const password = typeof body?.password === "string" ? body.password.slice(0, 256) : "";
 
   if (!password || !checkPassword(password)) {
-    const count = (entry && entry.until > now - LOCK_MS ? entry.count : 0) + 1;
-    fails.set(ip, { count, until: count >= MAX_FAILS ? now + LOCK_MS : 0 });
+    const count = (entry && now - entry.seen < WINDOW_MS ? entry.count : 0) + 1;
+    fails.set(ip, { count, seen: now });
     if (fails.size > 10000) fails.clear();
-    // Frenar intentos repetidos de adivinar la contraseña
-    await new Promise((r) => setTimeout(r, 1000));
+    // Retardo que crece con cada fallo: 1s, 2s, 4s, 8s... hasta 10s
+    const delay = Math.min(BASE_MS * 2 ** (count - 1), MAX_MS);
+    await new Promise((r) => setTimeout(r, delay));
     return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 401 });
   }
   fails.delete(ip);
