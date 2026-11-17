@@ -3,6 +3,7 @@ import { DATA_SYNC_TABLES, SCHEMA_SYNC_DATA_TABLES, replaceTableData } from "../
 import {
   BILLING_STRUCTURE_PROCEDURES,
   GENERAL_PROCEDURES,
+  MIGRATION_PROCEDURES,
   addMissingColumns,
   createMissingProcedures,
   createMissingTables,
@@ -70,7 +71,11 @@ async function runStep(target: Connection, source: Connection, req: StepRequest)
 // y, para borrar data o crear procedimientos, solo los de las listas fijas.
 const IDENTIFIER = /^[A-Za-z0-9_$]{1,64}$/;
 const REPLACEABLE_TABLES = new Set<string>([...DATA_SYNC_TABLES, ...SCHEMA_SYNC_DATA_TABLES]);
-const ALLOWED_PROCEDURES = new Set<string>([...BILLING_STRUCTURE_PROCEDURES, ...GENERAL_PROCEDURES]);
+const ALLOWED_PROCEDURES = new Set<string>([
+  ...BILLING_STRUCTURE_PROCEDURES,
+  ...GENERAL_PROCEDURES,
+  ...MIGRATION_PROCEDURES,
+]);
 
 function checkNames(names: unknown, allowed?: Set<string>): string[] {
   if (!Array.isArray(names) || names.length > 100) throw new Error("Lista no valida");

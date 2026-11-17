@@ -48,9 +48,10 @@ interface Lists {
   schemaSyncDataTables: string[];
   billingProcedures: string[];
   generalProcedures: string[];
+  migrationProcedures: string[];
 }
 
-type OptionId = "1" | "2" | "3" | "4" | "5";
+type OptionId = "1" | "2" | "3" | "4" | "5" | "6";
 
 interface LogLine {
   kind: "info" | "ok" | "error" | "title";
@@ -110,6 +111,13 @@ const OPTIONS: {
     destructive: false,
     icon: "code",
   },
+  {
+    id: "6",
+    title: "Procedimientos de Migración Miuvex",
+    description: "Crea los procedimientos de la migración que falten en el destino. No reemplaza los que ya existen.",
+    destructive: false,
+    icon: "code",
+  },
 ];
 
 const STORAGE_KEY = "ossado-sync-selection";
@@ -156,6 +164,11 @@ function describeSteps(option: OptionId, lists: Lists): string[] {
     case "5":
       return [
         `Crea los procedimientos generales que falten (${lists.generalProcedures.length})`,
+        "Los que ya existen en destino no se tocan",
+      ];
+    case "6":
+      return [
+        `Crea los procedimientos de la migración que falten (${lists.migrationProcedures.length})`,
         "Los que ya existen en destino no se tocan",
       ];
   }
@@ -406,6 +419,11 @@ export function SyncPanel() {
       if (option === "5") {
         add("title", "=== COPIA DE PROCEDIMIENTOS ===");
         await createProcedures(lists.generalProcedures);
+      }
+
+      if (option === "6") {
+        add("title", "=== PROCEDIMIENTOS DE MIGRACION MIUVEX ===");
+        await createProcedures(lists.migrationProcedures);
       }
 
       add("title", "Proceso completado.");

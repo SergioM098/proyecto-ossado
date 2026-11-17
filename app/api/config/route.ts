@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { DATA_SYNC_TABLES, SCHEMA_SYNC_DATA_TABLES } from "../../../dataSync";
-import { BILLING_STRUCTURE_PROCEDURES, GENERAL_PROCEDURES } from "../../../sync";
+import { BILLING_STRUCTURE_PROCEDURES, GENERAL_PROCEDURES, MIGRATION_PROCEDURES } from "../../../sync";
 import { isAuthenticated } from "../../../lib/auth";
 import { discoverConnections } from "../../../lib/connections";
 
@@ -22,6 +22,7 @@ export async function GET() {
         schemaSyncDataTables: SCHEMA_SYNC_DATA_TABLES,
         billingProcedures: BILLING_STRUCTURE_PROCEDURES,
         generalProcedures: GENERAL_PROCEDURES,
+        migrationProcedures: MIGRATION_PROCEDURES,
       },
     });
   } catch (err) {

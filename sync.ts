@@ -49,6 +49,20 @@ export const GENERAL_PROCEDURES = [
   "moconta",
 ];
 
+// Procedimientos de la migracion Miuvex (opcion 6)
+export const MIGRATION_PROCEDURES = [
+  "sp_ccosto",
+  "consecutivos",
+  "fuentes",
+  "get_current_consecutives",
+  "macuenta",
+  "moconta",
+  "sp_periodos_moconta",
+  "sucursal",
+  "terceros",
+  "tipo_documento",
+];
+
 export interface SyncResult {
   tablesCreated: string[];
   columnsAdded: { table: string; column: string }[];
